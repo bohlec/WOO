@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pick-a-range</title> 
+<meta name="viewport" content="width=device-width, initial-scale=1"> 
+<link rel="stylesheet" type="text/css" media="all" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.css" />
+<link rel="stylesheet" type="text/css" media="all" href="/styles/styles.css" />
+</head>
+<body>
+<div data-role="page" id="username">
+	<div data-role="header" data-theme="b">Pick-a-range</div> 
+	<div data-role="content">
+	    <label for="basic">Please enter your username:</label>
+	    <input type="text" name="username_input" id="basic" value=""  />
+	    <button type="submit" data-theme="e" class="ui-btn-hidden" aria-disabled="false">Submit</button>
+	</div> 
+	<div data-role="footer">
+	</div> 	
+</div>
+<div data-role="page" id="main">
+	<div data-role="header" data-theme="b">Pick-a-range</div> 
+	<div data-role="content">
+		<div id="navigator">
+			<div class="ui-navbar ui-mini" role="navigation">
+				<ul class="ui-grid-b">
+					<li class="ui-block-a nav_previous"><a class="nav_previous ui-btn ui-btn-inline ui-btn-up-c" href="#" data-corners="false" data-shadow="false" data-iconshadow="true" data-wrapperels="span" data-theme="c" data-inline="true" data-icon="arrow-l" data-iconpos="left"><span class="ui-btn-inner">&#171;&nbsp;<span class="ui-btn-text"></span></span></a></li>
+					<li class="ui-block-b nav_today"><a class="nav_today ui-btn-active ui-btn ui-btn-inline ui-btn-up-c" href="#" data-corners="false" data-shadow="false" data-iconshadow="true" data-wrapperels="span" data-theme="c" data-inline="true"><span class="ui-btn-inner"><span class="ui-btn-text"><span></span></span></span></a></li>
+					<li class="ui-block-c nav_next"><a class="nav_next ui-btn ui-btn-inline ui-btn-up-c ui-li-has-arrow" href="#" data-corners="false" data-shadow="false" data-iconshadow="true" data-wrapperels="span" data-theme="c" data-inline="true" data-icon="arrow-r" data-iconpos="right"><span class="ui-btn-inner"><span class="ui-btn-text"></span>&nbsp;&#187;</span></a></li>
+				</ul>
+			</div>	
+		</div>	
+		<div id="player-group-wrapper">
+			<div id="player-group"><div class="instructions">Click New Group to get a random group of players.</div>
+			</div>
+			<div id="player-controls" class="select_group">
+				<button type="button" data-theme="b" data-corners="true" data-shadow="true" data-iconshadow="true" class="ui-btn-hidden new_group" aria-disabled="false">New Group</button>
+				<button type="button" data-theme="e" data-icon="arrow-r" data-iconpos="right" data-corners="true" data-shadow="true" data-iconshadow="true" class="ui-btn-hidden accept" aria-disabled="false">Accept</button>
+			</div>
+		</div>
+		<div id="slider_wrapper">
+			<div class="points">This range is worth <span id="range_points">0</span> points.</div>
+			<div id="slider"></div>
+		</div>
+		<div id="players_points_summary"></div>
+		<div id="submit-wrapper"><button type="submit" data-theme="e" data-corners="true" data-shadow="true" data-iconshadow="true"  class="ui-btn-hidden" aria-disabled="false">Submit</button><span class="roster_saved">Your selections have been saved.</span></div>
+		<div id="score_wrapper">
+			<div class="ui-grid-a">
+				<div class="ui-block-a"><div class="ui-bar ui-bar-e">Player score:<br><span id="player_points">0</span></div></div>
+				<div class="ui-block-b"><div class="ui-bar ui-bar-e">Your score:<br><span id="roster_points">0</span></div></div>
+			</div>			
+		</div>		
+	</div> 
+	<div data-role="footer" data-theme="b">
+		<div data-role="navbar">
+			<ul>
+				<li><a href="#main">Make/View Picks</a></li>
+				<li><a href="#leaderboard">Leaderboard</a></li>
+				<li><a id='signout' href="#">Sign Out</a></li>
+			</ul>
+		</div><!-- /navbar -->
+	</div> 	
+</div>
+<div data-role="page" id="leaderboard">
+	<div data-role="header" data-theme="b">Leaders</div> 
+	<div data-role="content">
+		<div id="leaderboard_wrapper"></div>
+	</div> 
+	<div data-role="footer" data-theme="b">
+		<div data-role="navbar">
+			<ul>
+				<li><a href="#main">Make/View Picks</a></li>
+				<li><a href="#leaderboard">Leaderboard</a></li>
+			</ul>
+		</div><!-- /navbar -->
+	</div> 	
+</div>
+<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+<script type='text/javascript' src='/scripts/jquery-ui-1.9.2.custom.min.js'></script>
+<script type='text/javascript' src='http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.js'></script>
+<script type='text/javascript' src='/scripts/main.js'></script>
+<script type='text/javascript' src='/scripts/jQRangeSlider-min.js'></script>
+</body>
+</html>
