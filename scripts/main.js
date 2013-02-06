@@ -83,9 +83,8 @@ function game_view(controller) {
 			_this.controller.getNewGroup(function(){$.mobile.loading('hide');});
 		});
 		$('#player-controls .accept').on("click", function(e){
-			$('#player-controls').hide();
+			$('#main').addClass('accept');
 			$('#slider').rangeSlider({arrows:false});
-			$('#slider_wrapper,#submit-wrapper').show();
 		});
 		$('#submit-wrapper button').on("click", function(e) {
 			var slider = $("#slider");
@@ -222,8 +221,8 @@ function leaderboard_view(controller) {
 			if (userpicks) {
 				var playerGroup = new PlayerGroup(userpicks);
 				page.displayGroup(playerGroup);
-				$('#player-controls').hide();
-				$('#slider_wrapper, #score_wrapper').show();
+				//$('#player-controls').hide();
+				//$('#slider_wrapper, #score_wrapper').show();
 				if ($('#slider div.ui-rangeSlider-container').length) $('#slider').rangeSlider('destroy');
 				$('#slider').rangeSlider({arrows:false,defaultValues:{min: userpicks.range_min, max: userpicks.range_max}});
 				$('#range_points').html(userpicks.points);
@@ -232,13 +231,13 @@ function leaderboard_view(controller) {
 				$('#main').addClass('saved');
 			} else {
 				//reset page
-				$('#slider_wrapper, #score_wrapper').hide();
+				$('#main').removeClass('saved accept');
+				$('#players_points_summary').html('');
 				if (Controller.getPageDate() == Controller.getPageDate(new Date())) {
-					$('#player-controls').show();
+					$('#main').addClass('unlocked');
 					$('#player-group').html('<div class="message">Make your picks for today.</div>');
 				} else {
-					$('#player-controls').hide();
-					$('#players_points_summary').html('');
+					$('#main').removeClass('unlocked');
 					$('#player-group').html('<div class="message">No players picked for this day.</div>');
 				}
 			}

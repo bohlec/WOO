@@ -42,7 +42,7 @@ div.player .playerStat, div.player .playerOpp {
 #main.saved .roster_saved{
   display:block;
 }
-#main.saved #submit-wrapper {
+#main.saved #submit-wrapper, #main.accept #player-controls, #main #player-controls, #main.unlocked.accept #player-controls {
   display:none;
 }
 div.instructions {
@@ -55,6 +55,15 @@ div.instructions {
   display:none;
 }
 #main.saved #score_wrapper {
+  display:block;
+}
+#main.unlocked #player-controls {
+  display:block;
+}
+#main.accept #slider_wrapper, #main.accept #submit-wrapper {
+  display:block;
+}
+#main.saved #slider_wrapper {
   display:block;
 }
 .yourscore {
