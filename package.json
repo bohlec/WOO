@@ -6,7 +6,7 @@
     "cron":"1.0.x",
     "mongodb":"1.2.x",
     "mongojs":"0.4.6",
-    "supervisor":"1.1.x"
+    "supervisor":"0.5.0"
   },
   "engines": {
     "node": "0.8.x",
