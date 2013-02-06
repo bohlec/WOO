@@ -50,6 +50,6 @@ app.get('/leaderboard', function(req, res) {
 //app.post('/athletes', athletes.addWine);
 //app.put('/athletes/:id', athletes.updateWine);
 //app.delete('/athletes/:id', athletes.deleteWine);
- 
-app.listen(3000);
+
+app.listen(process.env.port || 3000);
 console.log('Listening on port 3000...');
