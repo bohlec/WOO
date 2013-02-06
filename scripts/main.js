@@ -221,8 +221,6 @@ function leaderboard_view(controller) {
 			if (userpicks) {
 				var playerGroup = new PlayerGroup(userpicks);
 				page.displayGroup(playerGroup);
-				//$('#player-controls').hide();
-				//$('#slider_wrapper, #score_wrapper').show();
 				if ($('#slider div.ui-rangeSlider-container').length) $('#slider').rangeSlider('destroy');
 				$('#slider').rangeSlider({arrows:false,defaultValues:{min: userpicks.range_min, max: userpicks.range_max}});
 				$('#range_points').html(userpicks.points);

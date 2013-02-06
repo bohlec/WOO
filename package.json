@@ -1,0 +1,15 @@
+{
+  "name": "range-game",
+  "version": "0.0.1",
+  "dependencies": {
+    "express": "3.0.x",
+    "cron":"1.0.x",
+    "mongodb":"1.2.x",
+    "mongojs":"0.4.6",
+    "supervisor":"1.1.69"
+  },
+  "engines": {
+    "node": "0.8.x",
+    "npm": "1.1.x"
+  }
+}
