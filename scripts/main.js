@@ -226,7 +226,7 @@ function leaderboard_view(controller) {
 				$('#range_points').html(userpicks.points);
 				$('#roster_points').html((typeof(userpicks.roster_points) != 'undefined') ? userpicks.roster_points : 0);
 				$('#player_points').html((userpicks.score != -1) ? userpicks.score : 0);					
-				$('#main').addClass('saved');
+				$('#main').addClass('saved').removeClass("unlocked");
 			} else {
 				//reset page
 				$('#main').removeClass('saved accept');
