@@ -6,7 +6,7 @@ function User(name) {
 		this.username = username;
 	};
 	this.loadPicks = function(date, callback) {
-		$.getJSON('http://50.136.126.19:3000/rosters/'+this.username+'/'+date, function(data) {
+		$.getJSON('http://pickarange.aws.af.cm/rosters/'+this.username+'/'+date, function(data) {
 			if (data && data.roster && typeof(data.roster.date) != 'undefined') _this.picks[data.roster.date] = data.roster;
 			callback();
 		});
@@ -57,7 +57,7 @@ function game_view(controller) {
 					'<div><img src="' + player.headshots.large.href + '"></div>'+
 					'<div><a target="_blank" href="' + player.links.mobile.athletes.href.replace('playercard', 'playergamelog') + '"><span class="playerName">' + player.displayName + '</span></a></div>'+
 					'<div><span class="playerInfo">' + player.positions[0].abbreviation + ' ' + player.team.abbreviation + '</span></div>'+
-					'<div><span class="playerStat">' + (player.statistics[0].statCategories[0].stats[20].value / player.statistics[0].statCategories[0].stats[0].value).toFixed(1) + ' pts/gm</span></div>'+
+					'<div><span class="playerStat">' + (player.statistics[0].statCategories[0].stats[25].value).toFixed(1) + ' pts/gm</span></div>'+
 					'<div><span class="playerOpp">Opp: ' + player.opp + '</span></div>'+
 					'</div>'
 		}
@@ -67,9 +67,9 @@ function game_view(controller) {
 			var player1score = (typeof(playergroup.player_points[players[0].id.toString()]) != 'undefined') ? playergroup.player_points[players[0].id.toString()] : 0;
 			var player2score = (typeof(playergroup.player_points[players[1].id.toString()]) != 'undefined') ? playergroup.player_points[players[1].id.toString()] : 0;
 			var player3score = (typeof(playergroup.player_points[players[2].id.toString()]) != 'undefined') ? playergroup.player_points[players[2].id.toString()] : 0;
-			html =  '<div class="player_score_wrapper"><div class="points_graph" style="background-color:red;width:' + player1score + '%"></div><div class="points_graph points_val">' + player1score + '</div><div class="player_info">' + players[0].fullName + '</div></div>';
-			html += '<div class="player_score_wrapper"><div class="points_graph" style="background-color:red;width:' + player2score + '%;margin-left:' + player1score + '%"></div><div class="points_graph points_val">' + player2score + '</div><div class="player_info">' + players[1].fullName + '</div></div>';
-			html += '<div class="player_score_wrapper"><div class="points_graph" style="background-color:red;width:' + player3score + '%;margin-left:' + (player1score + player2score) + '%"></div><div class="points_graph points_val">' + player3score + '</div><div class="player_info">' + players[2].fullName + '</div></div>';
+			html =  '<div class="player_score_wrapper"><div class="points_graph" style="background-color:red;width:' + player1score + '%"></div><div class="points_graph points_val">' + player1score + '</div><div class="player_info">' + players[0].lastName + '</div></div>';
+			html += '<div class="player_score_wrapper"><div class="points_graph" style="background-color:red;width:' + player2score + '%;margin-left:' + player1score + '%"></div><div class="points_graph points_val">' + player2score + '</div><div class="player_info">' + players[1].lastName + '</div></div>';
+			html += '<div class="player_score_wrapper"><div class="points_graph" style="background-color:red;width:' + player3score + '%;margin-left:' + (player1score + player2score) + '%"></div><div class="points_graph points_val">' + player3score + '</div><div class="player_info">' + players[2].lastName + '</div></div>';
 			$('#players_points_summary').html(html);
 		} else {
 			$('#players_points_summary').html('');
@@ -93,12 +93,12 @@ function game_view(controller) {
 			$('div.player[data-id]').each(function() {
 				players.push(parseInt($(this).attr('data-id')));
 			});
-			$.post('http://50.136.126.19:3000/rosters/add', 
+			$.post('http://pickarange.aws.af.cm/rosters/add',
 					{	'user': _this.controller.getUser().username,
 						'date': _this.controller.getPageDate(),
-						'players':players, 
-						'range_min': Math.round(slider.rangeSlider("min")), 
-						'range_max': Math.round(slider.rangeSlider("max")), 
+						'players':players,
+						'range_min': Math.round(slider.rangeSlider("min")),
+						'range_max': Math.round(slider.rangeSlider("max")),
 						'points':range_pts.html(),
 						'score': '-1'
 					},
@@ -111,11 +111,11 @@ function game_view(controller) {
 		$('#navigator').on('click', 'li', function(e) {
 			var $this = $(this);
 			var dateArr = _this.controller.getPageDate().split('-');
-			var new_page_date = new Date(dateArr[0],(dateArr[1]-1),dateArr[2],'5','0','0');			
+			var new_page_date = new Date(dateArr[0],(dateArr[1]-1),dateArr[2],'5','0','0');
 			if ($this.is('.nav_previous')) {
 				_this.controller.setPageDate(new_page_date.setDate(new_page_date.getDate()-1));
 			} else if ($this.is('.nav_next')) {
-				_this.controller.setPageDate(new_page_date.setDate(new_page_date.getDate()+1));				
+				_this.controller.setPageDate(new_page_date.setDate(new_page_date.getDate()+1));
 			}
 		});
 		$('#signout').on("click", function(e){
@@ -132,7 +132,7 @@ function game_view(controller) {
 		})
 		.on("valuesChanged", function(e, data) {
 			//$('#main').removeClass('saved');
-		});		
+		});
 		//var user = _this.controller.getUser();
 		$.mobile.changePage('#main');
 	};
@@ -152,11 +152,11 @@ function user_view(controller) {
 	initialize();
 }
 function leaderboard_view(controller) {
-	$.getJSON('http://50.136.126.19:3000/leaderboard', function(data) {
+	$.getJSON('http://pickarange.aws.af.cm/leaderboard', function(data) {
 		var html = '<div data-role="collapsible-set">';
 		for(var i=0;i<data.length;i++) {
 			html += '<div data-role="collapsible" data-collapsed="true" data-theme="e" data-content-theme="d" data-user="' + data[i]._id + '">' +
-				'<h3>' + data[i]._id + '<span class="score">' + data[i].total + '</span></h3><p></p></div>';		
+				'<h3>' + data[i]._id + '<span class="score">' + data[i].total + '</span></h3><p></p></div>';
 		}
 		html += '</div>';
 		$('#leaderboard_wrapper').html(html);
@@ -166,25 +166,26 @@ function leaderboard_view(controller) {
 		e.stopPropagation();
 		var $this = jQuery(e.target);
 		if ($this.is('[data-user]')) {
-			$.getJSON('http://50.136.126.19:3000/rosters/summary/'+$this.attr('data-user'), function(data) {
+			$.getJSON('http://pickarange.aws.af.cm/rosters/summary/'+$this.attr('data-user'), function(data) {
 				if (data && data.length) {
 					var $content = $this.find('div.ui-collapsible-content');
 					var html = '<div data-role="collapsible-set">';
 					for(var j=0;j<data.length;j++) {
 						html += '<div data-role="collapsible" data-collapsed="true" data-theme="b" data-content-theme="d">' +
 							'<h3>' + data[j].date + '<span class="score">';
-						html += (data[j].roster_points == '--') ? 'Selected' : 'Score: ' + data[j].roster_points + '</span>';
+						html += (data[j].roster_points == '--') ? 'Selected' : 'Score: <strong>' + data[j].roster_points + '</strong></span>';
 						html += '</h3>';
-						html += '<div class="players">';
+						html += '<div class="players"><table style="width:100%;">';
 						for(var k=0;k<data[j].players.length;k++) {
-							html += data[j].players[k].displayName + ' ' + data[j].players[k].team.abbreviation;
+							html += '<tr><td>' + data[j].players[k].displayName + ' ' + data[j].players[k].team.abbreviation + '</td><td><strong>' +
+								data[j].player_points[data[j].players[k].id] + '</strong></td></tr>'
 							if (k != data[j].players.length-1) html += '<br>';
 						}
-						html += '</div><div class="scores">'
-						html += '<span class="range">Total Player Points: <strong>' + data[j].score + '</strong></span><br>';
-						html += '<span class="range">Point range: <strong>' + data[j].range_min + ' - ' + data[j].range_max + '</strong></span><br>';
-						html += '<span class="range">Range value: <strong>' + data[j].points + '</strong></span>';
-						html += '</div></div>';					
+						html += '</table></div><div class="scores"><table style="width:100%;">'
+						html += '<tr><td><span class="range">Total Player Points:</span></td><td><strong>' + data[j].score + '</strong></td></tr>';
+						html += '<tr><td><span class="range">Point range:</span></td><td><strong>' + data[j].range_min + ' - ' + data[j].range_max + '</strong></td></tr>';
+						html += '<tr><td><span class="range">Range value:</span></td><td><strong>' + data[j].points + '</strong></td></tr>';
+						html += '</table></div></div>';
 					}
 					html += '</div>';
 					$content.html(html);
@@ -210,7 +211,7 @@ function leaderboard_view(controller) {
 		Controller.loadDate();
 	};
 	Controller.getNewGroup = function(callback) {
-		$.getJSON('http://50.136.126.19:3000/athletes/getGroup/'+Controller.getPageDate(), function(data){
+		$.getJSON('http://pickarange.aws.af.cm/athletes/getGroup/'+Controller.getPageDate(), function(data){
 			var playerGroup = new PlayerGroup(data);
 			page.displayGroup(playerGroup);
 			if (callback) callback();
@@ -226,19 +227,20 @@ function leaderboard_view(controller) {
 				$('#slider_wrapper, #score_wrapper').show();
 				if ($('#slider div.ui-rangeSlider-container').length) $('#slider').rangeSlider('destroy');
 				$('#slider').rangeSlider({arrows:false,defaultValues:{min: userpicks.range_min, max: userpicks.range_max}});
+				$('#slider').rangeSlider('disable');
 				$('#range_points').html(userpicks.points);
 				$('#roster_points').html((typeof(userpicks.roster_points) != 'undefined') ? userpicks.roster_points : 0);
-				$('#player_points').html((userpicks.score != -1) ? userpicks.score : 0);					
+				$('#player_points').html((userpicks.score != -1) ? userpicks.score : 0);
 				$('#main').addClass('saved');
 			} else {
 				//reset page
 				$('#slider_wrapper, #score_wrapper').hide();
+				$('#players_points_summary').html('');
 				if (Controller.getPageDate() == Controller.getPageDate(new Date())) {
 					$('#player-controls').show();
 					$('#player-group').html('<div class="message">Make your picks for today.</div>');
 				} else {
 					$('#player-controls').hide();
-					$('#players_points_summary').html('');
 					$('#player-group').html('<div class="message">No players picked for this day.</div>');
 				}
 			}

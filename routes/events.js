@@ -1,15 +1,18 @@
 var mongo = require('mongodb'),
 http = require('http');
- 
+
 var Server = mongo.Server,
     Db = mongo.Db,
-    BSON = mongo.BSONPure;
- 
-var server = new Server('localhost', 27017, {auto_reconnect: true});
-db = new Db('woo', server);
- 
-db.open(function(err, db) {
-    if(!err) {
+    BSON = mongo.BSONPure,
+    Client = mongo.MongoClient;
+
+//var server = new Server('localhost', 27017, {auto_reconnect: true});
+//db = new Db('woo', server);
+
+Client.connect('mongodb://pickarange:pickme@ds049537.mongolab.com:49537/pickarange', function(err, db) {
+
+//db.open(function(err, db) {
+    //if(!err) {
         console.log("Connected to 'events' database");
         db.collection('events', {safe:true}, function(err, collection) {
             if (err) {
@@ -17,126 +20,131 @@ db.open(function(err, db) {
                 //populateDB();
             }
         });
-    }
-});
+    //}
+//});
 
-exports.findById = function(req, res) {
-    var id = req.params.id;
-    console.log('Retrieving event: ' + id);
-    db.collection('events', function(err, collection) {
-        collection.findOne({'_id':new BSON.ObjectID(id)}, function(err, item) {
-            res.send(item);
+    exports.findById = function(req, res) {
+        var id = req.params.id;
+        console.log('Retrieving event: ' + id);
+        db.collection('events', function(err, collection) {
+            collection.findOne({'_id':new BSON.ObjectID(id)}, function(err, item) {
+                res.send(item);
+            });
         });
-    });
-};
+    };
 
-exports.findAll = function(req, res) {
-    db.collection('events', function(err, collection) {
-        collection.find().toArray(function(err, items) {
-            res.send(items);
+    exports.findAll = function(req, res) {
+        db.collection('events', function(err, collection) {
+            collection.find().toArray(function(err, items) {
+                res.send(items);
+            });
         });
-    });
-};
+    };
 
 
-exports.reloadAll = function(req, res) {
-    // Lookup last recorded date in DB
-    db.collection('events', function(err, collection) {
-        collection.find({}, {'date':1}).sort({'date':-1}).limit(1).toArray(function(err, items) {
-            var endDate = new Date(),
-                startDate;
-            if (items & items.length) {
-                startDate = items[0].date; // last date in DB
-            } else {
-                startDate = new Date();
-                startDate.setDate(startDate.getDate()-3); // start 2 days back
-            }
-            endDate.setDate(endDate.getDate()+2);
-            while (startDate <= endDate) {
-                console.log(startDate);
+    exports.reloadAll = function(req, res) {
+        // Lookup last recorded date in DB
+        db.collection('events', function(err, collection) {
+            collection.find({}, {'date':1}).sort({'date':-1}).limit(1).toArray(function(err, items) {
+                var endDate = new Date(),
+                    startDate;
+                if (items & items.length) {
+                    startDate = items[0].date; // last date in DB
+                } else {
+                    startDate = new Date();
+                    startDate.setDate(startDate.getDate()-3); // start 2 days back
+                }
+                endDate.setDate(endDate.getDate()+2);
+                while (startDate <= endDate) {
+                    console.log(startDate);
 
-                var options = {
-                  host: 'api.espn.com',
-                  port: 80,
-                  path: '/v1/sports/basketball/nba/events?dates='+url_date_formatter(startDate)+
-                        '&disable=venues,links,stats,linescores&apikey=ceevkg9k7t9gs4kyufyf9rqr'
-                };
-                http.get(options, function(resp){
-                    var json = '';
-                    resp.on('data', function(chunk){
-                        json+=chunk;
-                    });
-                    resp.on("end", function(e) {
-                        json = JSON.parse(json);
-                        var events = json.sports[0].leagues[0].events;
-                        console.log('Adding events: '+events.length);
-                        for(var i=0;i<events.length;i++) {
-                            var options = {
-                              host: 'api.espn.com',
-                              port: 80,
-                              path: '/v1/sports/basketball/nba/events/'+events[i].id+'?' +
-                                    '&enable=statistics&apikey=ceevkg9k7t9gs4kyufyf9rqr'
-                            };
-                            http.get(options, function(resp1){
-                                var json1 = '';
-                                resp1.on('data', function(chunk) {
-                                    json1+=chunk;
-                                });
-                                resp1.on('end', function(e) {
-                                    json1 = JSON.parse(json1);
-                                    db.collection('events', function(err, collection) {
-                                        var event = json1.sports[0].leagues[0].events[0];
-                                        event.date = new Date(event.date);
-                                        collection.update({'id':event.id},
-                                            event,
-                                            {'upsert':true, 'safe':true},
-                                            function(err, result){
-                                                if (err) {
-                                                    console.log('Error1 '+err);
-                                                } else {
-                                                    //console.log('Success');
-                                                    if (res) res.send('Success');
+                    var options = {
+                      host: 'api.espn.com',
+                      port: 80,
+                      path: '/v1/sports/basketball/nba/events?dates='+url_date_formatter(startDate)+
+                            '&disable=venues,links,stats,linescores&apikey=ceevkg9k7t9gs4kyufyf9rqr'
+                    };
+                    http.get(options, function(resp){
+                        var json = '';
+                        resp.on('error', function(e) {
+                            console.log('HTTP ERROR: ' + e);
+                        });
+                        resp.on('data', function(chunk){
+                            json+=chunk;
+                        });
+                        resp.on("end", function(e) {
+                            json = JSON.parse(json);
+                            var events = json.sports[0].leagues[0].events;
+                            console.log('Adding events: '+events.length);
+                            for(var i=0;i<events.length;i++) {
+                                var options = {
+                                  host: 'api.espn.com',
+                                  port: 80,
+                                  path: '/v1/sports/basketball/nba/events/'+events[i].id+'?' +
+                                        '&enable=statistics&apikey=ceevkg9k7t9gs4kyufyf9rqr'
+                                };
+                                http.get(options, function(resp1){
+                                    var json1 = '';
+                                    resp1.on('data', function(chunk) {
+                                        json1+=chunk;
+                                    });
+                                    resp1.on('end', function(e) {
+                                        json1 = JSON.parse(json1);
+                                        db.collection('events', function(err, collection) {
+                                            var event = json1.sports[0].leagues[0].events[0];
+                                            event.date = new Date(event.date);
+                                            collection.update({'id':event.id},
+                                                event,
+                                                {'upsert':true, 'safe':true},
+                                                function(err, result){
+                                                    if (err) {
+                                                        console.log('Error1 '+err);
+                                                    } else {
+                                                        //console.log('Success');
+                                                        if (res) res.send('Success');
+                                                    }
+                                                }
+                                            );
+                                        });
+
+                                        db.collection('athlete_events', function(err, collection) {
+                                            var comps = json1.sports[0].leagues[0].events[0].competitions[0].competitors;
+                                            for(var i=0;i<comps.length;i++) {
+                                                var athletes = comps[i].team.athletes;
+                                                var athlete_opp = (i) ? comps[0].team.abbreviation : comps[1].team.abbreviation;
+                                                for(var j=0;j<athletes.length;j++) {
+                                                    var athlete = athletes[j];
+                                                    athlete.date = new Date(json1.sports[0].leagues[0].events[0].date+'');
+                                                    athlete.eventID = json1.sports[0].leagues[0].events[0].id;
+                                                    athlete.opp = athlete_opp;
+                                                     collection.update({'id':parseInt(athlete.id), 'eventID':parseInt(athlete.eventID)},
+                                                        athlete,
+                                                        {'upsert':true, 'safe':true},
+                                                        function(err, result){
+                                                            if (err) {
+                                                                console.log('Error2 '+err);
+                                                            } else {
+                                                                //console.log('Success');
+                                                                if (res) res.send('Success');
+                                                            }
+                                                        });
                                                 }
                                             }
-                                        );
-                                    });
+                                        });
 
-                                    db.collection('athlete_events', function(err, collection) {
-                                        var comps = json1.sports[0].leagues[0].events[0].competitions[0].competitors;
-                                        for(var i=0;i<comps.length;i++) {
-                                            var athletes = comps[i].team.athletes;
-                                            var athlete_opp = (i) ? comps[0].team.abbreviation : comps[1].team.abbreviation;
-                                            for(var j=0;j<athletes.length;j++) {
-                                                var athlete = athletes[j];
-                                                athlete.date = new Date(json1.sports[0].leagues[0].events[0].date+'');
-                                                athlete.eventID = json1.sports[0].leagues[0].events[0].id;
-                                                athlete.opp = athlete_opp;
-                                                 collection.update({'id':parseInt(athlete.id), 'eventID':parseInt(athlete.eventID)},
-                                                    athlete,
-                                                    {'upsert':true, 'safe':true},
-                                                    function(err, result){
-                                                        if (err) {
-                                                            console.log('Error2 '+err);
-                                                        } else {
-                                                            //console.log('Success');
-                                                            if (res) res.send('Success');
-                                                        }                                                      
-                                                    });
-                                            }                                          
-                                        }
                                     });
-
                                 });
-                            });
-                        }                 
+                            }
+                        });
                     });
-                }); 
 
-                startDate.setDate(startDate.getDate()+1);
-            }
+                    startDate.setDate(startDate.getDate()+1);
+                }
+            });
         });
-    });   
-}
+    }
+
+});
 
 
 function url_date_formatter(date) {
@@ -244,6 +252,6 @@ exports.reloadAll = function(req, res) {
         });
     }).on("error", function(e){
       console.log("Got error: " + e.message);
-    });    
+    });
 }
 */
