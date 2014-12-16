@@ -178,7 +178,7 @@ function leaderboard_view(controller) {
 						html += '<div class="players"><table style="width:100%;">';
 						for(var k=0;k<data[j].players.length;k++) {
 							html += '<tr><td>' + data[j].players[k].displayName + ' ' + data[j].players[k].team.abbreviation + '</td><td><strong>' +
-								data[j].player_points[data[j].players[k].id] + '</strong></td></tr>'
+								((data[j].player_points[data[j].players[k].id]) ? data[j].player_points[data[j].players[k].id] : '--') + '</strong></td></tr>'
 							if (k != data[j].players.length-1) html += '<br>';
 						}
 						html += '</table></div><div class="scores"><table style="width:100%;">'

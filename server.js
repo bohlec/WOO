@@ -12,7 +12,9 @@ app.configure(function () {
     app.use(express.bodyParser());
 });
 
-app.get('/athletes', athletes.findAll);
+app.get('/athletes', function(req, res) {
+  athletes.findAll(req,res);
+});
 app.get('/athletes/id/:id', athletes.findById);
 app.get('/athletes/reloadAll', function(req, res) {
   athletes.reloadAll(req,res);
