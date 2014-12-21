@@ -1,3 +1,5 @@
+var service_path = (window.location.href.indexOf('localhost')) ? 'http://localhost:3000' : 'http://pickarange.aws.af.cm';
+
 // Models
 function User(name) {
 	var _this = this;
@@ -6,7 +8,7 @@ function User(name) {
 		this.username = username;
 	};
 	this.loadPicks = function(date, callback) {
-		$.getJSON('http://pickarange.aws.af.cm/rosters/'+this.username+'/'+date, function(data) {
+		$.getJSON(service_path + '/rosters/'+this.username+'/'+date, function(data) {
 			if (data && data.roster && typeof(data.roster.date) != 'undefined') _this.picks[data.roster.date] = data.roster;
 			callback();
 		});
@@ -48,7 +50,6 @@ function Player(objPlayer) {
 // Views
 function game_view(controller) {
 	var _this = this;
-	this.controller = controller;
 	this.displayGroup = function(playergroup) {
 		var html = '', players = playergroup.players;
 		for(var i=0;i<players.length;i++) {
@@ -57,7 +58,7 @@ function game_view(controller) {
 					'<div><img src="' + player.headshots.large.href + '"></div>'+
 					'<div><a target="_blank" href="' + player.links.mobile.athletes.href.replace('playercard', 'playergamelog') + '"><span class="playerName">' + player.displayName + '</span></a></div>'+
 					'<div><span class="playerInfo">' + player.positions[0].abbreviation + ' ' + player.team.abbreviation + '</span></div>'+
-					'<div><span class="playerStat">' + (player.statistics[0].statCategories[0].stats[25].value).toFixed(1) + ' pts/gm</span></div>'+
+					'<div><span class="playerStat">' + parseInt(player.statistics[0].statCategories[0].stats[25].value).toFixed(1) + ' pts/gm</span></div>'+
 					'<div><span class="playerOpp">Opp: ' + player.opp + '</span></div>'+
 					'</div>'
 		}
@@ -80,7 +81,7 @@ function game_view(controller) {
 		$('#player-controls .new_group').on("click", function(e){
 			$.mobile.loading('show');
 			$('#main').removeClass('saved');
-			_this.controller.getNewGroup(function(){$.mobile.loading('hide');});
+			controller.getNewGroup(function(){$.mobile.loading('hide');});
 		});
 		$('#player-controls .accept').on("click", function(e){
 			$('#player-controls').hide();
@@ -89,14 +90,16 @@ function game_view(controller) {
 		});
 		$('#submit-wrapper button').on("click", function(e) {
 			var slider = $("#slider");
+			/*
 			var players = [];
 			$('div.player[data-id]').each(function() {
 				players.push(parseInt($(this).attr('data-id')));
 			});
-			$.post('http://pickarange.aws.af.cm/rosters/add',
-					{	'user': _this.controller.getUser().username,
-						'date': _this.controller.getPageDate(),
-						'players':players,
+			*/
+			$.post(service_path + '/rosters/add',
+					{	'user': controller.getUser().username,
+						'date': controller.getPageDate(),
+						'players': controller.getGroup().players,
 						'range_min': Math.round(slider.rangeSlider("min")),
 						'range_max': Math.round(slider.rangeSlider("max")),
 						'points':range_pts.html(),
@@ -110,16 +113,16 @@ function game_view(controller) {
 		});
 		$('#navigator').on('click', 'li', function(e) {
 			var $this = $(this);
-			var dateArr = _this.controller.getPageDate().split('-');
+			var dateArr = controller.getPageDate().split('-');
 			var new_page_date = new Date(dateArr[0],(dateArr[1]-1),dateArr[2],'5','0','0');
 			if ($this.is('.nav_previous')) {
-				_this.controller.setPageDate(new_page_date.setDate(new_page_date.getDate()-1));
+				controller.setPageDate(new_page_date.setDate(new_page_date.getDate()-1));
 			} else if ($this.is('.nav_next')) {
-				_this.controller.setPageDate(new_page_date.setDate(new_page_date.getDate()+1));
+				controller.setPageDate(new_page_date.setDate(new_page_date.getDate()+1));
 			}
 		});
 		$('#signout').on("click", function(e){
-			_this.controller.getUser().storeUsername('');
+			controller.getUser().storeUsername('');
 			$.mobile.changePage('#username');
 		});
 		$("#slider")
@@ -152,7 +155,7 @@ function user_view(controller) {
 	initialize();
 }
 function leaderboard_view(controller) {
-	$.getJSON('http://pickarange.aws.af.cm/leaderboard', function(data) {
+	$.getJSON(service_path + '/leaderboard', function(data) {
 		var html = '<div data-role="collapsible-set">';
 		for(var i=0;i<data.length;i++) {
 			html += '<div data-role="collapsible" data-collapsed="true" data-theme="e" data-content-theme="d" data-user="' + data[i]._id + '">' +
@@ -166,7 +169,7 @@ function leaderboard_view(controller) {
 		e.stopPropagation();
 		var $this = jQuery(e.target);
 		if ($this.is('[data-user]')) {
-			$.getJSON('http://pickarange.aws.af.cm/rosters/summary/'+$this.attr('data-user'), function(data) {
+			$.getJSON(service_path + '/rosters/summary/'+$this.attr('data-user'), function(data) {
 				if (data && data.length) {
 					var $content = $this.find('div.ui-collapsible-content');
 					var html = '<div data-role="collapsible-set">';
@@ -197,11 +200,13 @@ function leaderboard_view(controller) {
 }
 
 // Main controller
+var Controller = {};
+
 (function() {
 	var page_date = new Date();
 	var user = User.getCurrentUser()
 	var page = null;
-	var Controller = {};
+	var playerGroup = null;
 	Controller.getPageDate = function(date) {
 		date = (date) ? date : page_date;
 		return date.getFullYear().toString()+'-'+('0'+(date.getMonth()+1)).slice(-2)+'-'+('0'+date.getDate()).slice(-2);
@@ -211,11 +216,14 @@ function leaderboard_view(controller) {
 		Controller.loadDate();
 	};
 	Controller.getNewGroup = function(callback) {
-		$.getJSON('http://pickarange.aws.af.cm/athletes/getGroup/'+Controller.getPageDate(), function(data){
-			var playerGroup = new PlayerGroup(data);
+		$.getJSON(service_path + '/athletes/getGroup/'+Controller.getPageDate(), function(data){
+			playerGroup = new PlayerGroup(data);
 			page.displayGroup(playerGroup);
 			if (callback) callback();
 		});
+	};
+	Controller.getGroup = function() {
+		return playerGroup;
 	};
 	Controller.loadDate = function() {
 		user.loadPicks(Controller.getPageDate(), function(){

@@ -43,6 +43,10 @@ app.post('/rosters/add', function(req, res) {
   res.header("Access-Control-Allow-Origin", "*");
   rosters.addRoster(req,res);
 });
+app.get('/rosters/loadPlayers', function(req, res) {
+  res.header("Access-Control-Allow-Origin", "*");
+  rosters.loadPlayers(req,res);
+});
 
 app.get('/events', events.findAll);
 app.get('/events/reloadAll', function(req, res) {
