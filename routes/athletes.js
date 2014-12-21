@@ -1,57 +1,77 @@
-var mongo = require('mongodb'),
+var mongo = require('mongodb-bluebird'),
+Promise = require('bluebird'),
 http = require('http');
- 
+
 var Server = mongo.Server,
     Db = mongo.Db,
-    BSON = mongo.BSONPure;
- 
-var server = new Server('localhost', 27017, {auto_reconnect: true});
-db = new Db('woo', server);
- 
-db.open(function(err, db) {
-    if(!err) {
+    BSON = mongo.BSONPure,
+    Client = mongo.MongoClient;
+
+//var server = new Server('localhost', 27017, {auto_reconnect: true});
+//var server = new Server('ds049537.mongolab.com', 49537, {auto_reconnect: true});
+mongo.connect('mongodb://pickarange:pickme@ds049537.mongolab.com:49537/pickarange').then(function(db) {
+    //mongodb://<dbuser>:<dbpassword>@ds049537.mongolab.com:49537/pickarange
+    //db = new Db('pickarange', server);
+
+    //db.open(function(err, db) {
+    if(db) {
         console.log("Connected to 'athletedb' database");
-        db.collection('athletes', {safe:true}, function(err, collection) {
-            if (err) {
-                console.log("The 'athletes' collection doesn't exist. Creating it with sample data...");
-                //populateDB();
-            }
-        });
     }
-});
+    //});
 
-exports.findById = function(req, res) {
-    var id = req.params.id;
-    console.log('Retrieving athlete: ' + id);
-    db.collection('athletes', function(err, collection) {
-        collection.findOne({'id':id+''}, function(err, item) {
-            res.send(item);
-        });
-    });
-};
 
-exports.findAll = function(req, res) {
-    db.collection('athletes', function(err, collection) {
-        collection.find().toArray(function(err, items) {
-            res.send(items);
+    exports.findById = function(req, res) {
+        var id = req.params.id;
+        console.log('Retrieving athlete: ' + id);
+        db.collection('athletes', function(err, collection) {
+            collection.findOne({'id':id+''}, function(err, item) {
+                res.send(item);
+            });
         });
-    });
-};
+    };
 
-exports.reloadAll = function(req, res) {
-    var options = {
-      host: 'api.espn.com',
-      port: 80,
-      path: '/v1/sports/basketball/nba/teams?enable=leaders,stats&apikey=ceevkg9k7t9gs4kyufyf9rqr'
-    }, json = '';
-    http.get(options, function(resp){
-        resp.on('data', function(chunk){
-            json+=chunk;
+    exports.findByIds = function(req, res) {
+        var ids = req.params.ids;
+        console.log('Retrieving athletes: ' + ids);
+        var collAthletes =  db.collection('athletes');
+
+        return collAthletes.find({'id': { $in: ids }});
+/*
+        db.collection('athletes', function(err, collection) {
+            collection.find({'id': { $in: ids }}, function(err, items) {
+                res.send(items);
+            });
         });
-        resp.on("end", function(e) {
-            json = JSON.parse(json);
-            console.log('Adding athletes: ' + json);
-            db.collection('athletes', function(err, collection) {
+*/
+    };
+
+    exports.findAll = function(req, res) {
+        db.collection('athletes', function(err, collection) {
+            //console.log(collection);
+            collection.find().toArray(function(err, items) {
+                res.send(items);
+            });
+        });
+    };
+
+    exports.reloadAll = function(req, res) {
+        var options = {
+          host: 'api.espn.com',
+          port: 80,
+          path: '/v1/sports/basketball/nba/teams?enable=leaders,stats&apikey=ceevkg9k7t9gs4kyufyf9rqr'
+        }, json = '';
+
+
+        var collAthletes = db.collection('athletes'),
+            updates = [];
+
+        http.get(options, function(resp){
+            resp.on('data', function(chunk){
+                json+=chunk;
+            });
+            resp.on("end", function(e) {
+                json = JSON.parse(json);
+                console.log('Adding athletes: ' + json);
                 var teams = json.sports[0].leagues[0].teams;
                 for (var i=0; i<teams.length; i++) {
                     for (var stat in teams[i].leaders) {
@@ -60,7 +80,7 @@ exports.reloadAll = function(req, res) {
                                   host: 'api.espn.com',
                                   port: 80,
                                   path: teams[i].leaders[stat].links.api.athletes.href+'?enable=statistics&apikey=ceevkg9k7t9gs4kyufyf9rqr'
-                            };                     
+                            };
                             http.get(options, function(resp1) {
                                 var json1 = '';
                                 resp1.on('data', function(chunk) {
@@ -69,56 +89,57 @@ exports.reloadAll = function(req, res) {
                                 resp1.on('end', function(e) {
                                     json1 = JSON.parse(json1);
                                     var player = json1.sports[0].leagues[0].athletes[0];
-                                    collection.update({'id':player.id},
+                                    updates.push(collAthletes.update({'id':player.id},
                                         player,
-                                        {'upsert':true, 'safe':true},
-                                        function(err, result){
-                                            if (err) {
-                                                console.log('Error '+err);
-                                            } else {
-                                                console.log('Success');
-                                                if (res) res.send('Success');
-                                            }  
-                                        }                                                    
-                                    );
+                                        {'upsert':true, 'safe':true}
+                                    ));
                                 });
                             });
                         }
                     }
                 }
+                Promise.all(updates)
+                    .then(function() {
+                        res.send('Success');
+                    });
+                console.log('done');
             });
-            console.log('done');
+        }).on("error", function(e){
+          console.log("Got error: " + e.message);
         });
-    }).on("error", function(e){
-      console.log("Got error: " + e.message);
-    });    
-};
-exports.getGroup = function(req, res) {
-    var json = '';
-    var date = req.params.date;
-    var startDate = new Date(date+' 00:00:00');
-    //startDate.setHours(startDate.getHours()-5);
-    var endDate = new Date(date+' 23:59:59');
-    endDate.setHours(endDate.getHours()+5);
-    var active_teams = [], player_opps = {};
-    var comps = {};
-    console.log('Getting new group of leaders...'+startDate+' '+endDate);
-    db.collection('events', function(err, collection) {
-        collection.find({'date':{'$gte':startDate,'$lt':endDate}}).toArray(function(err, events) {
-            console.log(events.length+' events found.');
-            var team1, team2;
-            for(var i=0;i<events.length;i++) {
-                team1 = events[i].competitions[0].competitors[0].team;
-                team2 = events[i].competitions[0].competitors[1].team;
-                active_teams.push(team1.id);
-                active_teams.push(team2.id);
-                player_opps[team1.abbreviation] = team2.abbreviation;
-                player_opps[team2.abbreviation] = team1.abbreviation;
-            }
-            db.collection('athletes', function(err, athlete_collection) {
-                athlete_collection.find({'team.id':{'$in':active_teams}}).toArray(function(err, athletes) {
-                    console.log(athletes.length+' athletes found.');
-                    var group = [], player, groupPlayerIDs = [];
+    };
+    exports.getGroup = function(req, res) {
+        var json = {"players": {}};
+        var date = req.params.date;
+        var startDate = new Date(date+'T00:00:00-0500');
+        //startDate.setHours(startDate.getHours()-5);
+        var endDate = new Date(date+'T23:59:59-0500');
+        //endDate.setHours(endDate.getHours()+5);
+        var active_teams = [],
+            player_opps = {},
+            comps = {},
+            collEvents = db.collection('events'),
+            collAthletes = db.collection('athletes');
+
+        console.log('Getting new group of leaders...'+startDate.toISOString()+' '+endDate.toISOString());
+        collEvents.find({'date':{'$gte':new Date(startDate.toISOString()),'$lt':new Date(endDate.toISOString())}})
+            .then(function(events) {
+                console.log(events.length+' events found.');
+                var team1, team2;
+                for(var i=0;i<events.length;i++) {
+                    team1 = events[i].competitions[0].competitors[0].team;
+                    team2 = events[i].competitions[0].competitors[1].team;
+                    active_teams.push(team1.id);
+                    active_teams.push(team2.id);
+                    player_opps[team1.abbreviation] = team2.abbreviation;
+                    player_opps[team2.abbreviation] = team1.abbreviation;
+                }
+                return collAthletes.find({'team.id':{'$in':active_teams}});
+            })
+            .then(function(athletes) {
+                console.log(athletes.length+' athletes found.');
+                var group = [], player, groupPlayerIDs = [];
+                if (athletes.length) {
                     for(var j=0;j<3;j++) {
                         do {
                             player = athletes[Math.floor(Math.random() * athletes.length)];
@@ -127,12 +148,53 @@ exports.getGroup = function(req, res) {
                         group.push(player);
                         groupPlayerIDs.push(player.id);
                     }
-                    res.send('{"players":'+JSON.stringify(group)+'}');                    
+                }
+                json.players = group;
+            })
+            .finally(function() {
+                res.send(json);
+            });
+    };
+
+});
+
+/*
+
+        console.log('Getting new group of leaders...'+startDate.toISOString()+' '+endDate.toISOString());
+        db.collection('events', function(err, collection) {
+            collection.find({'date':{'$gte':new Date(startDate.toISOString()),'$lt':new Date(endDate.toISOString())}}).toArray(function(err, events) {
+                console.log(events.length+' events found.');
+                var team1, team2;
+                for(var i=0;i<events.length;i++) {
+                    team1 = events[i].competitions[0].competitors[0].team;
+                    team2 = events[i].competitions[0].competitors[1].team;
+                    active_teams.push(team1.id);
+                    active_teams.push(team2.id);
+                    player_opps[team1.abbreviation] = team2.abbreviation;
+                    player_opps[team2.abbreviation] = team1.abbreviation;
+                }
+                db.collection('athletes', function(err, athlete_collection) {
+                    athlete_collection.find({'team.id':{'$in':active_teams}}).toArray(function(err, athletes) {
+                        console.log(athletes.length+' athletes found.');
+                        var group = [], player, groupPlayerIDs = [];
+                        if (athletes.length) {
+                            for(var j=0;j<3;j++) {
+                                do {
+                                    player = athletes[Math.floor(Math.random() * athletes.length)];
+                                } while (groupPlayerIDs.indexOf(player.id) >= 0);
+                                player.opp = player_opps[player.team.abbreviation];
+                                group.push(player);
+                                groupPlayerIDs.push(player.id);
+                            }
+                        }
+                        res.send('{"players":'+JSON.stringify(group)+'}');
+                    });
                 });
             });
         });
-    });
-};
+*/
+
+
 /*
 exports.getGroup = function(req, res) {
     var json = '';
@@ -167,13 +229,13 @@ exports.getGroup = function(req, res) {
                             res.send('{"players":'+JSON.stringify(group)+'}');
                         });
                     //});
-                });  
+                });
             } else {
                 res.send('{"players":[]}');
-            }             
+            }
         });
     });
-   
+
 };
 */
 /*
@@ -203,6 +265,6 @@ exports.reloadAll = function(req, res) {
         });
     }).on("error", function(e){
       console.log("Got error: " + e.message);
-    });    
+    });
 };
 */
