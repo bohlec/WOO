@@ -1,4 +1,4 @@
-var service_path = (window.location.href.indexOf('localhost')) ? 'http://localhost:3000' : 'http://pickarange.aws.af.cm';
+var service_path = (window.location.href.indexOf('localhost') > 0) ? 'http://localhost:3000' : 'http://pickarange.aws.af.cm';
 
 // Models
 function User(name) {
