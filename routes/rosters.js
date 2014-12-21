@@ -4,8 +4,8 @@ http = require('http'),
 athletes = require('./athletes');
 
 
-//mongo.connect('mongodb://pickarange:pickme@ds049537.mongolab.com:49537/pickarange').then(function(db) {
-mongo.connect('mongodb://pickarange:pickme@ds027741.mongolab.com:27741/pickarange2').then(function(db) {
+mongo.connect('mongodb://pickarange:pickme@ds049537.mongolab.com:49537/pickarange').then(function(db) {
+//mongo.connect('mongodb://pickarange:pickme@ds027741.mongolab.com:27741/pickarange2').then(function(db) {
     if(db) {
         console.log("Connected to 'rosters' database");
     } else {
